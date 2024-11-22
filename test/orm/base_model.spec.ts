@@ -3006,6 +3006,37 @@ test.group('BaseModel | fill/merge', (group) => {
     assert.deepEqual(user.$attributes, { username: 'virk', age: 22 })
     assert.equal(user.foo, 'bar')
   })
+
+  test('ensure merge skips undefined values', async ({ fs, assert }) => {
+    const app = new AppFactory().create(fs.baseUrl, () => {})
+    await app.init()
+    const adapter = new FakeAdapter()
+
+    const BaseModel = getBaseModel(adapter)
+
+    class User extends BaseModel {
+      @column()
+      declare username: string
+
+      @column()
+      declare email: string
+    }
+
+    const email = 'virk@adonisjs.com'
+
+    const user = new User()
+    user.merge({
+      username: 'virk',
+      email,
+    })
+
+    user.merge({
+      username: 'nikk',
+      email: undefined,
+    })
+
+    assert.equal(user.email, email)
+  })
 })
 
 test.group('Base | apdater', (group) => {

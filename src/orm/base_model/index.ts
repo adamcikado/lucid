@@ -1707,61 +1707,67 @@ class BaseModelImpl implements LucidRow {
   merge(values: any, allowExtraProperties: boolean = false): this {
     const Model = this.constructor as typeof BaseModel
 
+    if (!isObject(values)) {
+      return this
+    }
+
     /**
      * Merge values with the attributes
      */
-    if (isObject(values)) {
-      Object.keys(values).forEach((key) => {
-        const value = values[key]
+    Object.keys(values).forEach((key) => {
+      const value = values[key]
 
-        /**
-         * Set as column
-         */
-        if (Model.$hasColumn(key)) {
-          ;(this as any)[key] = value
-          return
-        }
+      if (value === undefined) {
+        return
+      }
 
-        /**
-         * Resolve the attribute name from the column names. Since people
-         * usually define the column names directly as well by
-         * accepting them directly from the API.
-         */
-        const attributeName = Model.$keys.columnsToAttributes.get(key)
-        if (attributeName) {
-          ;(this as any)[attributeName] = value
-          return
-        }
+      /**
+       * Set as column
+       */
+      if (Model.$hasColumn(key)) {
+        ;(this as any)[key] = value
+        return
+      }
 
-        /**
-         * If key is defined as a relation, then ignore it, since one
-         * must pass a qualified model to `this.$setRelated()`
-         */
-        if (Model.$relationsDefinitions.has(key)) {
-          return
-        }
+      /**
+       * Resolve the attribute name from the column names. Since people
+       * usually define the column names directly as well by
+       * accepting them directly from the API.
+       */
+      const attributeName = Model.$keys.columnsToAttributes.get(key)
+      if (attributeName) {
+        ;(this as any)[attributeName] = value
+        return
+      }
 
-        /**
-         * If the property already exists on the model, then set it
-         * as it is vs defining it as an extra property
-         */
-        if (this.hasOwnProperty(key)) {
-          ;(this as any)[key] = value
-          return
-        }
+      /**
+       * If key is defined as a relation, then ignore it, since one
+       * must pass a qualified model to `this.$setRelated()`
+       */
+      if (Model.$relationsDefinitions.has(key)) {
+        return
+      }
 
-        /**
-         * Raise error when not instructed to ignore non-existing properties.
-         */
-        if (!allowExtraProperties) {
-          throw new Error(
-            `Cannot define "${key}" on "${Model.name}" model, since it is not defined as a model property`
-          )
-        }
+      /**
+       * If the property already exists on the model, then set it
+       * as it is vs defining it as an extra property
+       */
+      if (this.hasOwnProperty(key)) {
+        ;(this as any)[key] = value
+        return
+      }
 
-        this.$extras[key] = value
-      })
-    }
+      /**
+       * Raise error when not instructed to ignore non-existing properties.
+       */
+      if (!allowExtraProperties) {
+        throw new Error(
+          `Cannot define "${key}" on "${Model.name}" model, since it is not defined as a model property`
+        )
+      }
+
+      this.$extras[key] = value
+    })
 
     return this
   }
