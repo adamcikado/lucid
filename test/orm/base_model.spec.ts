@@ -813,6 +813,35 @@ test.group('Base Model | dirty', (group) => {
     user.location.isDirty = true
     assert.deepEqual(user.$dirty, { location: { state: 'goa', country: 'India', isDirty: true } })
   })
+
+  test('isDirty returns whether field is dirty', async ({ fs, assert }) => {
+    const app = new AppFactory().create(fs.baseUrl, () => {})
+    await app.init()
+    const db = getDb()
+    const adapter = ormAdapter(db)
+
+    const BaseModel = getBaseModel(adapter)
+
+    class User extends BaseModel {
+      @column()
+      declare username: string
+
+      @column()
+      declare email: string
+    }
+
+    const user = new User()
+
+    assert.isFalse(user.isDirty())
+    assert.isFalse(user.isDirty('username'))
+
+    user.username = 'virk'
+
+    assert.isTrue(user.isDirty())
+    assert.isTrue(user.isDirty('username'))
+    assert.isFalse(user.isDirty('email'))
+    assert.isTrue(user.isDirty(['username', 'email']))
+  })
 })
 
 test.group('Base Model | persist', (group) => {

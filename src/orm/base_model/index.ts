@@ -1767,6 +1767,19 @@ class BaseModelImpl implements LucidRow {
   }
 
   /**
+   * Returns whether any of the fields have been modified
+   */
+  isDirty(fields?: any): boolean {
+    const keys = Array.isArray(fields) ? fields : fields ? [fields] : []
+
+    if (keys.length === 0) {
+      return this.$isDirty
+    }
+
+    return keys.some((key) => key in this.$dirty)
+  }
+
+  /**
    * Enable force update even when no attributes
    * are dirty
    */
