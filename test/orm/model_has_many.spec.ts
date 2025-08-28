@@ -4580,6 +4580,49 @@ test.group('Model | HasMany | create', (group) => {
     assert.equal(totalUsers[0].total, 1)
     assert.equal(totalPosts[0].total, 1)
   })
+
+  test('create multiple related instances in short delay', async ({ fs, assert }) => {
+    const app = new AppFactory().create(fs.baseUrl, () => {})
+    await app.init()
+    const db = getDb()
+    const adapter = ormAdapter(db)
+    const BaseModel = getBaseModel(adapter)
+
+    class Post extends BaseModel {
+      @column()
+      declare userId: number
+
+      @column()
+      declare title: string
+    }
+
+    class User extends BaseModel {
+      @column({ isPrimary: true })
+      declare id: number
+
+      @hasMany(() => Post)
+      declare posts: HasMany<typeof Post>
+    }
+
+    const user = new User()
+    await user.save()
+
+    const count = 30
+
+    await Promise.all(
+      new Array(count).fill(null).map(async (_, i) => {
+        await new Promise((resolve) => setTimeout(resolve, i))
+
+        return user.related('posts').create({ title: 'Hello World' })
+      })
+    )
+
+    const totalUsers = await db.query().from('users').count('*', 'total')
+    const totalPosts = await db.query().from('posts').count('*', 'total')
+
+    assert.equal(totalUsers[0].total, 1)
+    assert.equal(totalPosts[0].total, count)
+  })
 })
 
 test.group('Model | HasMany | createMany', (group) => {
